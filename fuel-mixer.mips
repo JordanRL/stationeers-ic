@@ -1,0 +1,55 @@
+# Devices
+alias FuelMixer d0
+alias FuelMonitor d1
+alias O2Monitor d2
+alias H2Monitor d3
+
+# Device Info
+alias CurPress r0
+alias O2Temp r1
+alias H2Temp r2
+
+# Math Variables
+alias RatioCalculated r3
+alias TMP1 r4
+alias TMP2 r5
+
+# Script Settings
+define FuelTargetPress 4000
+define FuelH2Ratio 0.66
+
+main:
+# Get device info
+l CurPress FuelMonitor Pressure
+# If current pressure is less
+# than desired, activate
+blt CurPress FuelTargetPress activateMixer
+# If current pressure is more or equal
+# to desired, deactivate
+bge CurPress FuelTargetPress deactivateMixer
+yield
+j main
+
+activateMixer:
+# Get current temperatures
+l H2Temp H2Monitor Temperature
+l O2Temp O2Monitor Temperature
+
+# Uses the method developed by isyiaco
+# To calculate necessary mixer ratio
+mul TMP1 H2Temp FuelH2Ratio
+sub TMP2 1 FuelH2Ratio
+mul TMP2 O2Temp TMP2
+add TMP2 TMP1 TMP2
+div RatioCalculated TMP1 TMP2
+mul RatioCalculated 100 RatioCalculated
+
+# Activate and set the mixer
+s FuelMixer Setting RatioCalculated
+s FuelMixer On 1
+yield
+j main
+
+deactivateMixer:
+s FuelMixer On 0
+j main

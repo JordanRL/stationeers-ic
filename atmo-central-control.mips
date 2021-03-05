@@ -1,0 +1,34 @@
+# Script Settings
+define ModeLocal 0
+define ModeGlobalHeat 1
+define ModeGlobalCool 2
+define ModeGlobalIntake 3
+define ModeGlobalOutput 4
+define ModeGlobal 5
+
+define CircAuto 0
+define CircFull 1
+define CircNone 2
+
+# Devices
+alias TempDial d0
+alias TempControl d1
+alias CirculationDial d2
+alias CirculationControl d3
+alias PressureDial d4
+alias PressureControl d5
+
+# Device Info
+alias TempVal r0
+alias CirculationVal r1
+alias PressureVal r2
+
+main:
+l TempVal TempDial Setting
+l CirculationVal CirculationDial Setting
+l PressureVal PressureDial Setting
+s TempControl Setting TempVal
+s CirculationControl Setting CirculationVal
+s PressureControl Setting PressureVal
+yield
+j main

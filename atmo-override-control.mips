@@ -1,0 +1,34 @@
+# Script Settings
+define ModeLocal 0
+define ModeGlobalCool 1
+define ModeGlobalHeat 2
+define ModeGlobalIntake 3
+define ModeGlobalOutput 4
+define ModeGlobal 5
+
+# Devices
+alias OverrideDial d0
+alias OverrideSwitch d1
+alias AtmoControl d2
+
+# Device Info
+alias OverrideVal r0
+alias OverrideOn r1
+
+main:
+# Get device info
+l OverrideVal OverrideDial Setting
+l OverrideOn OverrideSwitch Setting
+
+# Activate override
+bnez OverrideOn writeAtmoControl
+
+# Reset AtmoControl
+s AtmoControl Setting ModeLocal
+yield
+j main
+
+writeAtmoControl:
+s AtmoControl Setting OverrideVal
+yield
+j main

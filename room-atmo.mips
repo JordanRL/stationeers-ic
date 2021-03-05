@@ -1,0 +1,123 @@
+# Script Settings
+define ModeLocal 0
+define ModeGlobalIntake 3
+define ModeGlobalOutput 4
+define ModeGlobal 5
+define CircAuto 0
+define CircFull 1
+define CircNone 2
+# Devices
+alias RoomIntake d0
+alias RoomAirMix d1
+alias AtmoControl d2
+alias CirculationControl d3
+alias PressureControl d4
+alias RoomSensor d5
+# Timer Variables
+alias WaitUntil r0
+alias CurrentTick r1
+# Control Variables
+alias Override r2
+alias Circulation r3
+alias Press r4
+alias PressMargin r5
+# State Variables
+alias CircStatus r6
+# Data Variables
+alias RoomPress r7
+init:
+move CurrentTick 0
+move WaitUntil 0
+main:
+l Override AtmoControl Setting
+l Circulation CirculationControl Setting
+l RoomPress RoomSensor Pressure
+bgezal Override interpretGlobal
+beq Circulation CircFull fullCirculation
+beq Circulation CircNone noCirculation
+bne CurrentTick WaitUntil timerloop
+bne CircStatus 1 autoCirculation
+j waitCirculation
+timerloop:
+add CurrentTick CurrentTick 1
+yield
+j main
+interpretGlobal:
+beq Override ModeGlobalIntake globalIntake
+beq Override ModeGlobalOutput globalOutput
+beq Override ModeGlobal normalPressure
+j main
+globalIntake:
+jal intakeActivate
+jal airmixShutoff
+yield
+j main
+globalOutput:
+jal intakeShutoff
+jal airmixActivate
+yield
+j main
+# Circulation Modes
+noCirculation:
+yield
+j init
+fullCirculation:
+jal intakeActivate
+jal airmixActivate
+yield
+j init
+autoCirculation:
+move WaitUntil 120
+move CurrentTick 0
+move CircStatus 1
+sub PressMargin Press RoomPress
+jal updateVentPressure
+bgez PressMargin underPressure
+blez PressMargin overPressure
+beqz PressMargin normalPressure
+waitCirculation:
+move WaitUntil 600
+move CurrentTick 0
+move CircStatus 0
+jal intakeShutoff
+jal airmixShutoff
+yield
+j main
+# Pressure Modes
+underPressure:
+abs PressMargin PressMargin
+blt PressMargin 1 normalPressure
+jal intakeShutoff
+jal airmixActivate
+yield
+j main
+overPressure:
+abs PressMargin PressMargin
+blt PressMargin 1 normalPressure
+jal intakeActivate
+jal airmixShutoff
+yield
+j main
+normalPressure:
+jal intakeActivate
+jal airmixActivate
+yield
+j main
+# Vent Controls
+updateVentPressure:
+s RoomAirMix PressureExternal Press
+sub Press Press 1
+s RoomIntake PressureExternal Press
+j ra
+intakeShutoff:
+s RoomIntake On 0
+j ra
+intakeActivate:
+s RoomIntake On 1
+j ra
+airmixShutoff:
+s RoomAirMix On 0
+j ra
+airmixActivate:
+s RoomAirMix On 1
+j ra

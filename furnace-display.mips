@@ -1,0 +1,33 @@
+# Devices
+alias TempDisp d0
+alias PressDisp d1
+alias Furnace d2
+
+# Device Info
+alias TempVal r0
+alias PressVal r1
+alias ContentsHash r2
+
+main:
+# Get info from devices
+l TempVal Furnace Temperature
+l PressVal Furnace Pressure
+l ContentsHash Furnace RecipeHash
+
+# Transform pressure to mPa with
+# two decimals
+div PressVal PressVal 10
+round PressVal PressVal
+div PressVal PressVal 100
+
+# Remove decimals from temp
+round TempVal TempVal
+
+# Set display values
+s TempDisp Setting TempVal
+s PressDisp Setting PressVal
+
+# Set the IC Housing to the contents hash
+s db Setting ContentsHash
+yield
+j main

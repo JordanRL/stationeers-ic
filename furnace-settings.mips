@@ -1,0 +1,44 @@
+# Devices
+alias PressureMem d0
+alias LargeDial d1
+alias SmallDial d2
+alias TemperatureMem d3
+alias TemperatureDial d4
+
+# Device Info
+alias LargeValue r0
+alias SmallValue r1
+
+# Math Variables
+alias CalcTemperature r2
+alias CalcPressure r3
+alias TempValue r4
+
+main:
+# Get device info (Pressure)
+l LargeValue LargeDial Setting
+l SmallValue SmallDial Setting
+
+# Initialize variables used for calculation
+move CalcPressure 0
+move TempValue 0
+move CalcTemperature 0
+
+# Calculate desired pressure in MPa
+add CalcPressure CalcPressure LargeValue
+div TempValue SmallValue 10
+add CalcPressure CalcPressure TempValue
+
+# Set pressure value
+s PressureMem Setting CalcPressure
+
+# Get device info (Temperature)
+l TempValue TemperatureDial Setting
+
+# Calculate desired temperature in K
+mul CalcTemperature TempValue 100
+
+# Set temperature value
+s TemperatureMem Setting CalcTemperature
+yield
+j main

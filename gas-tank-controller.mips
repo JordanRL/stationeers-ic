@@ -1,0 +1,72 @@
+# Devices
+alias GasTank d0
+alias GasVolPump d1
+alias GasAC d2
+
+# Device Info
+alias GasPress r0
+alias GasTemp r1
+
+# Pressure Settings
+alias MaxPressure r2
+alias PrevGasPress r3
+alias PumpVolSetting r4
+
+# Temperature Settings
+alias TargetTemp r5
+alias TempMargin r6
+
+# Calculation Variables
+alias Num1 r7
+
+init:
+# Max tank pressure in kPa
+move MaxPressure 50000
+# Volume pump setting in L
+move PumpVolSetting 1
+# Initialize with zero pressure
+move GasPress 0
+# The target gas temperature in K
+move TargetTemp 275.15
+# The allowable temperature margin in K
+move TempMargin 1
+
+main:
+# Get new device data
+move PrevGasPress GasPress
+l GasPress GasTank Pressure
+l GasTemp GasTank Temperature
+# If overpressure, vent
+bgt GasPress MaxPressure emergencyVent
+# Reset volume setting and pump setting
+move PumpVolSetting 1
+s GasVolPump On 0
+# Determine actual margin
+sub Num1 GasTemp TargetTemp
+# If over temp, cool
+bgt Num1 TempMargin airCondition
+# Reset AC power
+s GasAC On 0
+yield
+j main
+
+# Emergecy Venting Operations
+emergencyVent:
+# If volume is not enough to deal with inflow
+# Use exponential backoff to increase
+bgtal GasPress PrevGasPress incrementPump
+# Turn on emergency vent pump
+s GasVolPump Setting PumpVolSetting
+s GasVolPump On 1
+yield
+j main
+
+incrementPump:
+mul PumpVolSetting PumpVolSetting 2
+j ra
+
+# Air Conditioning Operations
+airCondition:
+s GasAC On 1
+s GasAC Open 1
+j main

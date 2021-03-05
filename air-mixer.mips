@@ -1,0 +1,106 @@
+# Script Settings
+define MinCO2Press 50
+define MinBreathPress 100
+define MinN2Press 100
+define TargetAirMixPress 20000
+define BreathRatio 0.20
+define CO2Ratio 0.03
+
+# Devices
+alias AirMixTank d0
+alias N2BreathMixer d1
+alias CO2Adder d2
+alias CO2Tank d3
+alias N2Tank d4
+alias BreathGasTank d5
+
+# Device Info
+alias CO2Press r0
+alias CO2Temp r1
+alias N2Press r2
+alias N2Temp r3
+alias BreathPress r4
+alias BreathTemp r5
+alias AirMixPress r6
+
+# Math Variables
+alias RatioCalculated r7
+alias TMP1 r8
+alias TMP2 r9
+alias TMP3 r10
+
+main:
+# Get device info
+l CO2Press CO2Tank Pressure
+l N2Press N2Tank Pressure
+l BreathPress BreathGasTank Pressure
+l CO2Temp CO2Tank Temperature
+l N2Temp N2Tank Temperature
+l BreathTemp BreathGasTank Temperature
+l AirMixPress AirMixTank Pressure
+
+# If more air mix is needed, run calculations
+bgt TargetAirMixPress AirMixPress checkAir
+j deactivateMixers
+
+checkAir:
+# If CO2 reserve is low, abort mixing
+blt CO2Press MinCO2Press deactivateMixers
+# If Breath Gas reserve is low, abort mixing
+blt BreathPress MinBreathPress deactivateMixers
+# If N2 reserve is low, abort mixing
+blt N2Press MinN2Press deactivateMixers
+# Else, continue with calculations
+j activateMixers
+
+activateMixers:
+# Adjust Breath Gas ratio based on CO2 ratio
+sub TMP3 1 CO2Ratio
+div TMP3 1 TMP3
+mul TMP3 TMP3 BreathRatio
+
+# Uses the method developed by isyiaco
+# To calculate necessary mixer ratio
+# For N2/Breath Gas
+mul TMP1 BreathTemp TMP3
+sub TMP2 1 TMP3
+mul TMP2 N2Temp TMP2
+add TMP2 TMP1 TMP2
+div RatioCalculated TMP1 TMP2
+mul RatioCalculated 100 RatioCalculated
+# Set O2/N2 ratio, assumes O2 is Input 1
+s N2BreathMixer Setting RatioCalculated
+
+# Calculate temp of output gas for CO2 Adder
+mul TMP2 100 TMP3
+sub TMP1 100 TMP2
+mul TMP1 TMP1 BreathTemp
+div TMP1 TMP1 N2Temp
+add TMP1 TMP1 TMP2
+mul TMP2 BreathTemp 100
+div TMP1 TMP2 TMP1
+
+# Uses the method developed by isyiaco
+# To calculate necessary mixer ratio
+# For CO2 Adding
+sub TMP2 1 CO2Ratio
+mul TMP1 TMP1 TMP2
+move TMP2 CO2Ratio
+mul TMP2 CO2Temp TMP2
+add TMP2 TMP1 TMP2
+div RatioCalculated TMP1 TMP2
+mul RatioCalculated 100 RatioCalculated
+# Set CO2 ratio, assumes CO2 is Input 2
+s CO2Adder Setting RatioCalculated
+
+# Turn on mixers
+s N2BreathMixer On 1
+s CO2Adder On 1
+yield
+j main
+
+deactivateMixers:
+s N2BreathMixer On 0
+s CO2Adder On 0
+yield
+j main

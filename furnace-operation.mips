@@ -1,0 +1,123 @@
+# Devices
+alias Furnace d0
+alias ActivateSwitch d1
+alias Press d2
+alias Temp d3
+alias OpenSwitch d4
+alias Indicator d5
+
+# Device Info
+alias CurTemp r0
+alias CurPress r1
+alias TargetTemp r2
+alias TargetPress r3
+alias Activated r4
+alias FurnaceOpened r5
+
+# Math Variables
+alias TempMargin r6
+alias PressMargin r7
+alias TempMarginSetting r8
+alias PressMarginSetting r9
+alias TempVolSetting r10
+alias PressVolSetting r11
+
+init:
+# Initialize
+s Indicator On 1
+s Furnace On 1
+
+main:
+# Get device info
+l Activated ActivateSwitch Setting
+l FurnaceOpened OpenSwitch Setting
+
+# Do furnace open ops
+bnezal FurnaceOpened openFurnace
+beqzal FurnaceOpened closeFurnace
+
+# Do furnace activation
+bnez Activated mainOn
+
+# Reset and clear furnace
+s Furnace SettingOutput 100
+s Indicator Color 4
+yield
+j main
+
+mainOn:
+# Get device info
+l CurTemp Furnace Temperature
+l CurPress Furnace Pressure
+l TargetPress Press Setting
+l TargetTemp Temp Setting
+
+# Convert MPa back to kPa
+mul TargetPress TargetPress 1000
+# Calculate margins
+mul TempMarginSetting CurTemp 0.1
+mul PressMarginSetting CurPress 0.1
+sub TempMargin TargetTemp CurTemp
+sub PressMargin TargetPress CurPress
+abs TempMargin TempMargin
+abs PressMargin PressMargin
+
+# Run input/output ops
+bgt CurPress TargetPress reducePressure
+bgt CurTemp TargetTemp reduceTemperature
+blt CurPress TargetPress increasePressure
+blt CurTemp TargetTemp increaseTemperature
+j main
+
+# Input/Output Ops
+reducePressure:
+bltal PressMargin PressMarginSetting volSettingLow
+bgeal PressMargin PressMarginSetting volSetting
+s Furnace SettingOutput PressVolSetting
+s Furnace SettingInput 0
+j main
+
+reduceTemperature:
+bltal TempMargin TempMarginSetting volSettingLow
+bgeal TempMargin TempMarginSetting volSetting
+s Furnace SettingOutput TempVolSetting
+s Furnace SettingInput 0
+j main
+
+increasePressure:
+bltal PressMargin PressMarginSetting volSettingLow
+bgeal PressMargin PressMarginSetting volSetting
+s Furnace SettingOutput 0
+s Furnace SettingInput PressVolSetting
+s Furnace Activate 1
+j main
+
+increaseTemperature:
+bltal TempMargin TempMarginSetting volSettingLow
+bgeal TempMargin TempMarginSetting volSetting
+s Furnace SettingOutput 0
+s Furnace SettingInput TempVolSetting
+s Furnace Activate 1
+j main
+
+# Scaling of volume pump setting based on margin
+volSettingLow:
+move TempVolSetting 3
+move PressVolSetting 10
+s Indicator Color 2
+j ra
+
+volSetting:
+move TempVolSetting 5
+move PressVolSetting 20
+s Indicator Color 5
+j ra
+
+# Open/Close Ops
+openFurnace:
+s Furnace Open 1
+j ra
+
+closeFurnace:
+s Furnace Open 0
+j ra

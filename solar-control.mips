@@ -1,0 +1,33 @@
+alias DaylightSensor d0
+
+define SolarPanelsDual -539224550
+define SolarPanelsHeavy -1545574413
+
+alias SolarAngleV r0
+alias SolarAngleH r1
+alias PanelAngleV r2
+alias PanelAngleH r3
+
+init:
+move PanelAngleH 90
+
+main:
+l SolarAngleV DaylightSensor Vertical
+l SolarAngleH DaylightSensor Horizontal
+jal panelsV
+jal panelsH
+yield
+j main
+
+panelsV:
+sub PanelAngleV SolarAngleV 15
+div PanelAngleV PanelAngleV 1.5
+min PanelAngleV PanelAngleV 100
+sb SolarPanelsDual Vertical PanelAngleV
+sb SolarPanelsHeavy Vertical PanelAngleV
+j ra
+
+panelsH:
+sb SolarPanelsDual Horizontal PanelAngleH
+sb SolarPanelsHeavy Horizontal PanelAngleH
+j ra

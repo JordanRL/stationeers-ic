@@ -1,0 +1,14 @@
+define Batteries 100
+
+alias ChargePercDisplay d0
+alias ChargeTotalDisplay d1
+
+alias ChargePerc r0
+alias ChargeTotal r1
+
+main:
+lb ChargePerc Batteries Ratio 0
+lb ChargeTotal Batteries Charge 1
+jal 
+yield
+j main
