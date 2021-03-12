@@ -1,0 +1,18 @@
+# Script Settings
+define TempAuto 0
+define TempFull 1
+define TempNone 2
+
+# Devices
+alias TempDial d0
+alias TempControl d1
+
+# Device Info
+alias TempVal r0
+
+main:
+l TempVal TempDial Setting
+add TempVal TempVal 273.15
+s TempControl Setting TempVal
+yield
+j main

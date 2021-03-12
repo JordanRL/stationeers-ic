@@ -1,0 +1,112 @@
+# Script Defines
+define colorRed 4
+define colorBlue 0
+define colorYellow 5
+define colorWhite 6
+
+define soundAlarmBase 1
+define soundDepressure 20
+define soundPressure 21
+define soundPower 23
+define soundStorm 18
+
+define alertNormal 0
+define alertGreenhouse 1
+define alertPower 2
+define alertStorm 3
+define alertDepressurize 4
+define alertPressurize 5
+
+define ledHash 1944485013
+define klaxonHash -828056979
+
+# Devices
+alias AlertMem d0
+alias AlertOverride d1
+
+# States
+alias alertStatus r0
+alias overrideStatus r1
+# Timer Variables
+alias CurrentTick r2
+alias WaitUntil r3
+alias AlertCount r4
+# Light Status
+alias CurrentColor r5
+alias CurrentOn r6
+# Klaxon Status
+alias CurrentSound r7
+
+init:
+move alertStatus 0
+move overrideStatus 0
+move WaitUntil 0
+move CurrentTick 0
+move AlertCount 0
+
+main:
+l alertStatus AlertMem Setting
+l overrideStatus AlertOverride Setting
+bnez overrideStatus deactivateAlert
+bne WaitUntil CurrentTick timerLoop
+bnez alertStatus checkAlert
+yield
+j main
+
+timerLoop:
+add CurrentTick CurrentTick 1
+yield
+j main
+
+checkAlert:
+beq AlertCount 10 deactivateAlert
+beq CurrentOn 1 toggleAlert
+move CurrentOn 1
+beq alertStatus alertGreenhouse greenhouseAlert
+beq alertStatus alertPower powerAlert
+beq alertStatus alertStorm stormAlert
+beq alertStatus alertDepressurize depressurizeAlert
+beq alertStatus alertPressurize pressurizeAlert
+
+deactivateAlert:
+s AlertMem Setting 0
+move AlertCount 0
+toggleAlert:
+move CurrentOn 0
+move CurrentColor colorWhite
+move WaitUntil 2
+move CurrentTick 1
+j doAlert
+# Alert Types
+greenhouseAlert:
+move CurrentColor colorYellow
+move CurrentSound soundAlarmBase
+j activeAlert
+powerAlert:
+move CurrentColor colorRed
+move CurrentSound soundPower
+j activeAlert
+stormAlert:
+move CurrentColor colorYellow
+move CurrentSound soundStorm
+j activeAlert
+depressurizeAlert:
+move CurrentColor colorBlue
+move CurrentSound soundDepressure
+j activeAlert
+pressurizeAlert:
+move CurrentColor colorBlue
+move CurrentSound soundPressure
+j activeAlert
+
+activeAlert:
+move WaitUntil 4
+move CurrentTick 1
+add AlertCount AlertCount 1
+doAlert:
+sb ledHash Color CurrentColor
+sb ledHash On CurrentOn
+sb klaxonHash Mode CurrentSound
+sb klaxonHash On CurrentOn
+yield
+j main

@@ -1,0 +1,18 @@
+# Devices
+alias TempControl d0
+alias TempDisplay d1
+alias PressureControl d2
+alias PressureDisplay d3
+
+# Device Info
+alias TempVal r0
+alias PressVal r1
+
+main:
+l TempVal TempControl Setting
+l PressVal PressureControl Setting
+sub TempVal TempVal 273.15
+s TempDisplay Setting TempVal
+s PressureDisplay Setting PressVal
+yield
+j main
